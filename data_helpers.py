@@ -11,16 +11,16 @@ def clean_str(string):
     string = re.sub(r"\'s", " \'s", string)
     string = re.sub(r"\'ve", " \'ve", string)
     string = re.sub(r"n\'t", " n\'t", string)
-    string = re.sub(r"\'re", " \'re", string)
+    string = re.sub(r"\'re", " \'re", string) # 单引号前加空格
     string = re.sub(r"\'d", " \'d", string)
     string = re.sub(r"\'ll", " \'ll", string)
     string = re.sub(r",", " , ", string)
     string = re.sub(r"!", " ! ", string)
-    string = re.sub(r"\(", " \( ", string)
+    string = re.sub(r"\(", " \( ", string) # 在括号前加空格
     string = re.sub(r"\)", " \) ", string)
     string = re.sub(r"\?", " \? ", string)
     string = re.sub(r"\s{2,}", " ", string)
-    return string.strip().lower()
+    return string.strip().lower() # 大写转为小写
 
 
 def load_data_and_labels(positive_data_file, negative_data_file):
@@ -34,12 +34,12 @@ def load_data_and_labels(positive_data_file, negative_data_file):
     negative_examples = list(open(negative_data_file, "r", encoding='utf-8').readlines())
     negative_examples = [s.strip() for s in negative_examples]
     # Split by words
-    x_text = positive_examples + negative_examples
+    x_text = positive_examples + negative_examples # list追加
     x_text = [clean_str(sent) for sent in x_text]
     # Generate labels
     positive_labels = [[0, 1] for _ in positive_examples]
     negative_labels = [[1, 0] for _ in negative_examples]
-    y = np.concatenate([positive_labels, negative_labels], 0)
+    y = np.concatenate([positive_labels, negative_labels], axis=0)
     return [x_text, y]
 
 

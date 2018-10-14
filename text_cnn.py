@@ -12,8 +12,8 @@ class TextCNN(object):
       embedding_size, filter_sizes, num_filters, l2_reg_lambda=0.0):
 
         # Placeholders for input, output and dropout
-        self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name="input_x")
-        self.input_y = tf.placeholder(tf.float32, [None, num_classes], name="input_y")
+        self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name="input_x") # 注意:所有的batch数据长度均相同, batch*seq_length
+        self.input_y = tf.placeholder(tf.float32, [None, num_classes], name="input_y") # batch*2
         self.dropout_keep_prob = tf.placeholder(tf.float32, name="dropout_keep_prob")
 
         # Keeping track of l2 regularization loss (optional)
@@ -23,30 +23,30 @@ class TextCNN(object):
         with tf.device('/cpu:0'), tf.name_scope("embedding"):
             self.W = tf.Variable(
                 tf.random_uniform([vocab_size, embedding_size], -1.0, 1.0),
-                name="W")
-            self.embedded_chars = tf.nn.embedding_lookup(self.W, self.input_x)
-            self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)
+                name="W") # vocab_size*emb_size
+            self.embedded_chars = tf.nn.embedding_lookup(self.W, self.input_x) # [batch,seq_length,emb_size]
+            self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1) # [batch,seq_length,emb_size,1], 单通道, NHWC
 
         # Create a convolution + maxpool layer for each filter size
         pooled_outputs = []
-        for i, filter_size in enumerate(filter_sizes):
-            with tf.name_scope("conv-maxpool-%s" % filter_size):
+        for i, filter_size in enumerate(filter_sizes): # 3,4,5
+            with tf.name_scope("conv-maxpool-%s" % filter_size): # 注意:此处是name_scope
                 # Convolution Layer
-                filter_shape = [filter_size, embedding_size, 1, num_filters]
+                filter_shape = [filter_size, embedding_size, 1, num_filters] # shape:[filter_height, filter_width, in_channels, out_channels]
                 W = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name="W")
                 b = tf.Variable(tf.constant(0.1, shape=[num_filters]), name="b")
                 conv = tf.nn.conv2d(
-                    self.embedded_chars_expanded,
+                    self.embedded_chars_expanded, # [batch,seq_length,embed,1]
                     W,
                     strides=[1, 1, 1, 1],
-                    padding="VALID",
+                    padding="VALID", # 不填充
                     name="conv")
                 # Apply nonlinearity
                 h = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
                 # Maxpooling over the outputs
-                pooled = tf.nn.max_pool(
-                    h,
-                    ksize=[1, sequence_length - filter_size + 1, 1, 1],
+                pooled = tf.nn.max_pool( # pooled:N*1*1*num_filters
+                    h, # NHWC
+                    ksize=[1, sequence_length - filter_size + 1, 1, 1], # NHWC,
                     strides=[1, 1, 1, 1],
                     padding='VALID',
                     name="pool")
@@ -54,7 +54,7 @@ class TextCNN(object):
 
         # Combine all the pooled features
         num_filters_total = num_filters * len(filter_sizes)
-        self.h_pool = tf.concat(pooled_outputs, 3)
+        self.h_pool = tf.concat(pooled_outputs, axis=3) # [batch_size, 1, 1, num_filters]
         self.h_pool_flat = tf.reshape(self.h_pool, [-1, num_filters_total])
 
         # Add dropout

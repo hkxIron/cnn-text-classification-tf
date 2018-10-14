@@ -50,9 +50,9 @@ def preprocess():
     x_text, y = data_helpers.load_data_and_labels(FLAGS.positive_data_file, FLAGS.negative_data_file)
 
     # Build vocabulary
-    max_document_length = max([len(x.split(" ")) for x in x_text])
+    max_document_length = max([len(x.split(" ")) for x in x_text]) # 计算数据中最长句子的长度
     vocab_processor = learn.preprocessing.VocabularyProcessor(max_document_length)
-    x = np.array(list(vocab_processor.fit_transform(x_text)))
+    x = np.array(list(vocab_processor.fit_transform(x_text))) # learn模块的高级用法, 将文本转id
 
     # Randomly shuffle data
     np.random.seed(10)
@@ -102,7 +102,7 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
             for g, v in grads_and_vars:
                 if g is not None:
                     grad_hist_summary = tf.summary.histogram("{}/grad/hist".format(v.name), g)
-                    sparsity_summary = tf.summary.scalar("{}/grad/sparsity".format(v.name), tf.nn.zero_fraction(g))
+                    sparsity_summary = tf.summary.scalar("{}/grad/sparsity".format(v.name), tf.nn.zero_fraction(g)) # 记录tf的非0比率
                     grad_summaries.append(grad_hist_summary)
                     grad_summaries.append(sparsity_summary)
             grad_summaries_merged = tf.summary.merge(grad_summaries)
@@ -152,7 +152,8 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
                     [train_op, global_step, train_summary_op, cnn.loss, cnn.accuracy],
                     feed_dict)
                 time_str = datetime.datetime.now().isoformat()
-                print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
+                if step%50 == 0:
+                    print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
                 train_summary_writer.add_summary(summaries, step)
 
             def dev_step(x_batch, y_batch, writer=None):
