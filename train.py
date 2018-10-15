@@ -22,14 +22,14 @@ tf.flags.DEFINE_integer("embedding_dim", 128, "Dimensionality of character embed
 tf.flags.DEFINE_string("filter_sizes", "3,4,5", "Comma-separated filter sizes (default: '3,4,5')")
 tf.flags.DEFINE_integer("num_filters", 128, "Number of filters per filter size (default: 128)")
 tf.flags.DEFINE_float("dropout_keep_prob", 0.5, "Dropout keep probability (default: 0.5)")
-tf.flags.DEFINE_float("l2_reg_lambda", 0.0, "L2 regularization lambda (default: 0.0)")
+tf.flags.DEFINE_float("l2_reg_lambda", 0.5, "L2 regularization lambda (default: 0.0)") #若不对最后一层加l2_reg,会出现过拟合
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (default: 64)")
 tf.flags.DEFINE_integer("num_epochs", 200, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
-tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps (default: 100)")
-tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
+tf.flags.DEFINE_integer("checkpoint_every", 500, "Save model after this many steps (default: 100)")
+tf.flags.DEFINE_integer("num_checkpoints", 3, "Number of checkpoints to store (default: 5)")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
@@ -122,6 +122,7 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
             train_summary_writer = tf.summary.FileWriter(train_summary_dir, sess.graph)
 
             # Dev summaries
+            # 最后用tf.summary.merge_all对所有训练图进行合并打包，最后必须用sess.run一下打包的图，并添加相应的记录。
             dev_summary_op = tf.summary.merge([loss_summary, acc_summary])
             dev_summary_dir = os.path.join(out_dir, "summaries", "dev")
             dev_summary_writer = tf.summary.FileWriter(dev_summary_dir, sess.graph)
@@ -171,7 +172,7 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
                 time_str = datetime.datetime.now().isoformat()
                 print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
                 if writer:
-                    writer.add_summary(summaries, step)
+                    writer.add_summary(summaries, step) # 写入日志文件中
 
             # Generate batches
             batches = data_helpers.batch_iter(
@@ -181,10 +182,12 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
                 x_batch, y_batch = zip(*batch)
                 train_step(x_batch, y_batch)
                 current_step = tf.train.global_step(sess, global_step)
+                # dev来评估模型
                 if current_step % FLAGS.evaluate_every == 0:
                     print("\nEvaluation:")
-                    dev_step(x_dev, y_dev, writer=dev_summary_writer)
+                    dev_step(x_dev, y_dev, writer=dev_summary_writer) # 使用所有的dev数据进行验证
                     print("")
+                # 保存模型
                 if current_step % FLAGS.checkpoint_every == 0:
                     path = saver.save(sess, checkpoint_prefix, global_step=current_step)
                     print("Saved model checkpoint to {}\n".format(path))

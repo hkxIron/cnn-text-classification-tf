@@ -60,7 +60,7 @@ with graph.as_default():
     sess = tf.Session(config=session_conf)
     with sess.as_default():
         # Load the saved meta graph and restore variables
-        saver = tf.train.import_meta_graph("{}.meta".format(checkpoint_file))
+        saver = tf.train.import_meta_graph("{}.meta".format(checkpoint_file)) # 直接从meta里恢复graph,妙
         saver.restore(sess, checkpoint_file)
 
         # Get the placeholders from the graph by name
