@@ -114,6 +114,7 @@ def train(x, y, vocab_processor):
             train_summary_writer = tf.summary.FileWriter(train_summary_dir, sess.graph)
 
             # Dev summaries
+            # 注意:是与dev相同的loss与summary,只不过放到不同的路径去了
             dev_summary_op = tf.summary.merge([loss_summary, acc_summary])
             dev_summary_dir = os.path.join(out_dir, "summaries", "dev")
             dev_summary_writer = tf.summary.FileWriter(dev_summary_dir, sess.graph)
