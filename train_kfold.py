@@ -80,7 +80,7 @@ def train(x, y, vocab_processor):
                 vocab_size=len(vocab_processor.vocabulary_),
                 embedding_size=FLAGS.embedding_dim,
                 filter_sizes=list(map(int, FLAGS.filter_sizes.split(","))),
-                num_filters=FLAGS.num_filters,
+                num_filter_of_each_size=FLAGS.num_filters,
                 l2_reg_lambda=FLAGS.l2_reg_lambda)
 
             # Define Training procedure

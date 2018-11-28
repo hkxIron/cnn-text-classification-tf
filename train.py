@@ -52,7 +52,7 @@ def preprocess():
     # Build vocabulary
     max_document_length = max([len(x.split(" ")) for x in x_text]) # 计算数据中最长句子的长度
     vocab_processor = learn.preprocessing.VocabularyProcessor(max_document_length)
-    x = np.array(list(vocab_processor.fit_transform(x_text))) # learn模块的高级用法, 将文本转id
+    x = np.array(list(vocab_processor.fit_transform(x_text))) # learn模块的高级用法, 将文本转id,得到二维数组[n,56]
 
     # Randomly shuffle data
     np.random.seed(10)
@@ -83,12 +83,12 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
         sess = tf.Session(config=session_conf)
         with sess.as_default():
             cnn = TextCNN(
-                sequence_length=x_train.shape[1],
+                sequence_length=x_train.shape[1], # 56
                 num_classes=y_train.shape[1],
                 vocab_size=len(vocab_processor.vocabulary_),
                 embedding_size=FLAGS.embedding_dim,
                 filter_sizes=list(map(int, FLAGS.filter_sizes.split(","))),
-                num_filters=FLAGS.num_filters,
+                num_filter_of_each_size=FLAGS.num_filters,
                 l2_reg_lambda=FLAGS.l2_reg_lambda)
 
             # Define Training procedure
@@ -134,7 +134,7 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
                 os.makedirs(checkpoint_dir)
             saver = tf.train.Saver(tf.global_variables(), max_to_keep=FLAGS.num_checkpoints)
 
-            # Write vocabulary
+            # Write vocabulary(将词典保存到指定路径)
             vocab_processor.save(os.path.join(out_dir, "vocab"))
 
             # Initialize all variables
@@ -175,14 +175,16 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
                     writer.add_summary(summaries, step) # 写入日志文件中
 
             # Generate batches
+            # x_train, y_train均为二维ndarray
             batches = data_helpers.batch_iter(
                 list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
             # Training loop. For each batch...
-            for batch in batches:
-                x_batch, y_batch = zip(*batch)
-                train_step(x_batch, y_batch)
+            for batch in batches: # batch的type为object,里面装的是array object
+                x_batch, y_batch = zip(*batch) # 解包
+                # 训练
+                train_step(x_batch, y_batch) # x_batch:array组成的tuple,每个array为一个句子的id seq
                 current_step = tf.train.global_step(sess, global_step)
-                # dev来评估模型
+                # dev来评估模型(这里所谓的dev集其实就是通常的test集,并未用来调参)
                 if current_step % FLAGS.evaluate_every == 0:
                     print("\nEvaluation:")
                     dev_step(x_dev, y_dev, writer=dev_summary_writer) # 使用所有的dev数据进行验证
