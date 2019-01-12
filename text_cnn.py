@@ -12,6 +12,7 @@ class TextCNN(object):
       embedding_size, filter_sizes, num_filter_of_each_size, l2_reg_lambda=0.0):
 
         # Placeholders for input, output and dropout
+        # 如果sequence_length不固定,变量就没办法定义
         self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name="input_x") # 注意:所有的batch数据长度均相同, batch*seq_length, 即固定56,并不像rnn中动态padding
         self.input_y = tf.placeholder(tf.float32, [None, num_classes], name="input_y") # batch*2
         self.dropout_keep_prob = tf.placeholder(tf.float32, name="dropout_keep_prob")
